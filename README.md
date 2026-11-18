@@ -178,12 +178,3 @@ Visit **http://localhost:5173** in your browser.
   Books and Users pages.
 - **Controlled forms** with per-field validation before submit.
 
-## 👤 Author
-
-**Your Name** — [Your Student ID]
-Web Application Development (BIWA2110)
-Limkokwing University — Faculty of Information Communication Technology
-
-## 📄 License
-
-Academic project — not for commercial use.
