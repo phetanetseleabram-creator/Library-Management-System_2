@@ -1,7 +1,9 @@
 # 📚 Library Management System
 
 A full-stack web application for managing a library — books, users, borrowing,
-and stock tracking. Built for **Web Application Development (BIWA2110)**.
+and stock tracking.
+
+🔗 **Live Demo:** [https://library-management-system-2-alpha.vercel.app](https://library-management-system-2-alpha.vercel.app)
 
 ## 🛠️ Tech Stack
 
