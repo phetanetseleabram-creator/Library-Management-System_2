@@ -1,21 +1,9 @@
 import { useEffect, useState } from 'react';
-import {
-  getUsers,
-  addUser,
-  updateUser,
-  deleteUser,
-  login,
-} from '../services/api';
+import { getUsers, addUser, updateUser, deleteUser, login } from '../services/api';
 
-const emptyForm = {
-  name: '',
-  membership_id: '',
-  role: 'member',
-  password: '',
-};
+const emptyForm = { name: '', membership_id: '', role: 'member', password: '' };
 
 export default function Users() {
-  // ----- Admin CRUD state -----
   const [users, setUsers] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
@@ -23,287 +11,132 @@ export default function Users() {
   const [message, setMessage] = useState({ text: '', type: '' });
   const [loading, setLoading] = useState(true);
 
-  // ----- Login state -----
   const [loginForm, setLoginForm] = useState({ membership_id: '', password: '' });
   const [loggedInUser, setLoggedInUser] = useState(null);
   const [loginError, setLoginError] = useState('');
 
   const loadUsers = () => {
     setLoading(true);
-    getUsers()
-      .then(setUsers)
-      .catch((err) => setMessage({ text: err.message, type: 'error' }))
-      .finally(() => setLoading(false));
+    getUsers().then(setUsers).finally(() => setLoading(false));
   };
 
-  useEffect(() => {
-    loadUsers();
-  }, []);
+  useEffect(() => { loadUsers(); }, []);
 
-  // ---------- LOGIN ----------
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoginError('');
-    if (!loginForm.membership_id || !loginForm.password) {
-      setLoginError('Both fields are required');
-      return;
-    }
+    if (!loginForm.membership_id || !loginForm.password) return setLoginError('Both fields required');
     try {
       const data = await login(loginForm.membership_id, loginForm.password);
       setLoggedInUser(data.user);
       setLoginForm({ membership_id: '', password: '' });
-    } catch (err) {
-      setLoginError(err.message);
-    }
-  };
-
-  const handleLogout = () => setLoggedInUser(null);
-
-  // ---------- ADMIN CRUD ----------
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm({ ...form, [name]: value });
-    if (errors[name]) setErrors({ ...errors, [name]: '' });
-  };
-
-  const validate = () => {
-    const errs = {};
-    if (!form.name.trim()) errs.name = 'Name is required';
-    if (!form.membership_id.trim()) errs.membership_id = 'Membership ID is required';
-    if (!editingId && !form.password.trim()) errs.password = 'Password required for new user';
-    if (form.password && form.password.length < 4)
-      errs.password = 'Password must be at least 4 characters';
-    return errs;
+    } catch (err) { setLoginError(err.message); }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage({ text: '', type: '' });
+    const errs = {};
+    if (!form.name.trim()) errs.name = 'Required';
+    if (!form.membership_id.trim()) errs.membership_id = 'Required';
+    if (!editingId && !form.password.trim()) errs.password = 'Required';
+    if (form.password && form.password.length < 4) errs.password = 'Min 4 chars';
+    
+    if (Object.keys(errs).length) return setErrors(errs);
 
-    const errs = validate();
-    if (Object.keys(errs).length) {
-      setErrors(errs);
-      return;
-    }
-
-    const payload = {
-      name: form.name.trim(),
-      membership_id: form.membership_id.trim(),
-      role: form.role,
-      password: form.password || undefined,
-    };
-
+    const payload = { ...form, password: form.password || undefined };
     try {
-      if (editingId) {
-        await updateUser(editingId, payload);
-        setMessage({ text: '✅ User updated', type: 'success' });
-      } else {
-        await addUser(payload);
-        setMessage({ text: '✅ User added', type: 'success' });
-      }
+      if (editingId) await updateUser(editingId, payload);
+      else await addUser(payload);
+      setMessage({ text: editingId ? '✅ User updated' : '✅ User added', type: 'success' });
       setForm(emptyForm);
       setEditingId(null);
-      setErrors({});
       loadUsers();
-    } catch (err) {
-      setMessage({ text: `❌ ${err.message}`, type: 'error' });
-    }
-  };
-
-  const handleEdit = (user) => {
-    setForm({
-      name: user.name,
-      membership_id: user.membership_id,
-      role: user.role || 'member',
-      password: '', // don't prefill password
-    });
-    setEditingId(user.id);
-    setErrors({});
-    setMessage({ text: '', type: '' });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleCancel = () => {
-    setForm(emptyForm);
-    setEditingId(null);
-    setErrors({});
-    setMessage({ text: '', type: '' });
-  };
-
-  const handleDelete = async (id) => {
-    if (!window.confirm('Delete this user permanently?')) return;
-    try {
-      await deleteUser(id);
-      setMessage({ text: '🗑️ User deleted', type: 'success' });
-      loadUsers();
-    } catch (err) {
-      setMessage({ text: `❌ ${err.message}`, type: 'error' });
-    }
+    } catch (err) { setMessage({ text: `❌ ${err.message}`, type: 'error' }); }
   };
 
   return (
-    <div style={styles.page}>
+    <div className="page-container">
       <h1>User Management</h1>
 
-      {/* ---------- LOGIN SECTION ---------- */}
-      <div style={styles.card}>
-        <h2 style={{ marginTop: 0 }}>🔐 Login</h2>
-
+      {/* Login */}
+      <div className="card">
+        <h2>🔐 Login</h2>
         {loggedInUser ? (
-          <div style={styles.loggedIn}>
-            <p style={{ margin: 0 }}>
-              Welcome, <strong>{loggedInUser.name}</strong> ({loggedInUser.role})
-            </p>
-            <button onClick={handleLogout} style={styles.btnSecondary}>
-              Logout
-            </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <p>Welcome, <strong>{loggedInUser.name}</strong> ({loggedInUser.role})</p>
+            <button onClick={() => setLoggedInUser(null)} className="btn btn-secondary">Logout</button>
           </div>
         ) : (
-          <form onSubmit={handleLogin} style={styles.form}>
-            <Field
-              label="Membership ID"
-              name="membership_id"
-              value={loginForm.membership_id}
-              onChange={(e) =>
-                setLoginForm({ ...loginForm, membership_id: e.target.value })
-              }
-            />
-            <Field
-              label="Password"
-              name="password"
-              type="password"
-              value={loginForm.password}
-              onChange={(e) =>
-                setLoginForm({ ...loginForm, password: e.target.value })
-              }
-            />
-            <div style={styles.actions}>
-              <button type="submit" style={styles.btnPrimary}>
-                Login
-              </button>
+          <form onSubmit={handleLogin} className="form-grid">
+            <div className="form-group">
+              <label>Membership ID</label>
+              <input value={loginForm.membership_id} onChange={e => setLoginForm({...loginForm, membership_id: e.target.value})} className="form-control" />
+            </div>
+            <div className="form-group">
+              <label>Password</label>
+              <input type="password" value={loginForm.password} onChange={e => setLoginForm({...loginForm, password: e.target.value})} className="form-control" />
+            </div>
+            <div className="form-actions" style={{ marginTop: 0 }}>
+              <button type="submit" className="btn btn-primary" style={{ marginTop: 28 }}>Login</button>
             </div>
           </form>
         )}
-
-        {loginError && <p style={styles.errorLine}>{loginError}</p>}
+        {loginError && <div className="alert alert-error" style={{ marginTop: 16 }}>{loginError}</div>}
       </div>
 
-      {/* ---------- ADMIN CRUD SECTION ---------- */}
-      <div style={styles.card}>
-        <h2 style={{ marginTop: 0 }}>
-          {editingId ? '✏️ Update User' : '➕ Add New User (Admin)'}
-        </h2>
-
-        <form onSubmit={handleSubmit} style={styles.form} noValidate>
-          <Field
-            label="Name"
-            name="name"
-            value={form.name}
-            onChange={handleChange}
-            error={errors.name}
-          />
-          <Field
-            label="Membership ID"
-            name="membership_id"
-            value={form.membership_id}
-            onChange={handleChange}
-            error={errors.membership_id}
-            placeholder="e.g. LIB-001"
-          />
-
-          <div style={styles.selectGroup}>
-            <label style={styles.label}>Role</label>
-            <select
-              name="role"
-              value={form.role}
-              onChange={handleChange}
-              style={styles.input}
-            >
-              <option value="member">Member</option>
-              <option value="admin">Admin</option>
-            </select>
+      {/* Admin CRUD */}
+      <div className="card">
+        <h2>{editingId ? '✏️ Update User' : '➕ Add New User (Admin)'}</h2>
+        <form onSubmit={handleSubmit} noValidate>
+          <div className="form-grid">
+            <div className="form-group">
+              <label>Name</label>
+              <input name="name" value={form.name} onChange={e => setForm({...form, name: e.target.value})} className={`form-control ${errors.name ? 'error' : ''}`} />
+              {errors.name && <span className="error-msg">{errors.name}</span>}
+            </div>
+            <div className="form-group">
+              <label>Membership ID</label>
+              <input name="membership_id" value={form.membership_id} onChange={e => setForm({...form, membership_id: e.target.value})} className={`form-control ${errors.membership_id ? 'error' : ''}`} />
+              {errors.membership_id && <span className="error-msg">{errors.membership_id}</span>}
+            </div>
+            <div className="form-group">
+              <label>Role</label>
+              <select name="role" value={form.role} onChange={e => setForm({...form, role: e.target.value})} className="form-control">
+                <option value="member">Member</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label>{editingId ? 'New Password (Optional)' : 'Password'}</label>
+              <input type="password" name="password" value={form.password} onChange={e => setForm({...form, password: e.target.value})} className={`form-control ${errors.password ? 'error' : ''}`} />
+              {errors.password && <span className="error-msg">{errors.password}</span>}
+            </div>
           </div>
-
-          <Field
-            label={editingId ? 'New Password (optional)' : 'Password'}
-            name="password"
-            type="password"
-            value={form.password}
-            onChange={handleChange}
-            error={errors.password}
-            placeholder={editingId ? 'Leave blank to keep current' : ''}
-          />
-
-          <div style={styles.actions}>
-            <button type="submit" style={styles.btnPrimary}>
-              {editingId ? 'Update User' : 'Add User'}
-            </button>
-            {editingId && (
-              <button type="button" onClick={handleCancel} style={styles.btnSecondary}>
-                Cancel
-              </button>
-            )}
+          <div className="form-actions">
+            <button type="submit" className="btn btn-primary">{editingId ? 'Update User' : 'Add User'}</button>
+            {editingId && <button type="button" onClick={() => { setForm(emptyForm); setEditingId(null); setErrors({}); }} className="btn btn-secondary">Cancel</button>}
           </div>
         </form>
-
-        {message.text && (
-          <p
-            style={{
-              marginTop: 12,
-              color: message.type === 'error' ? '#dc2626' : '#16a34a',
-              fontWeight: 500,
-            }}
-          >
-            {message.text}
-          </p>
-        )}
+        {message.text && <div className={`alert alert-${message.type}`}>{message.text}</div>}
       </div>
 
-      {/* ---------- USER LIST ---------- */}
-      <h2>All Users ({users.length})</h2>
-
-      {loading ? (
-        <p>Loading…</p>
-      ) : users.length === 0 ? (
-        <p>No users yet. Add the first user above.</p>
-      ) : (
-        <div style={{ overflowX: 'auto' }}>
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                <th style={styles.th}>Name</th>
-                <th style={styles.th}>Membership ID</th>
-                <th style={styles.th}>Role</th>
-                <th style={styles.th}>Joined</th>
-                <th style={styles.th}>Actions</th>
-              </tr>
-            </thead>
+      <h2 className="section-title">All Users ({users.length})</h2>
+      {loading ? <p>Loading…</p> : (
+        <div className="table-responsive">
+          <table>
+            <thead><tr><th>Name</th><th>ID</th><th>Role</th><th>Joined</th><th>Actions</th></tr></thead>
             <tbody>
-              {users.map((u) => (
+              {users.map(u => (
                 <tr key={u.id}>
-                  <td style={styles.td}>{u.name}</td>
-                  <td style={styles.td}>{u.membership_id}</td>
-                  <td style={styles.td}>
-                    <span
-                      style={
-                        u.role === 'admin' ? styles.badgeAdmin : styles.badgeMember
-                      }
-                    >
-                      {u.role}
-                    </span>
-                  </td>
-                  <td style={styles.td}>
-                    {u.created_at
-                      ? new Date(u.created_at).toLocaleDateString()
-                      : '—'}
-                  </td>
-                  <td style={styles.td}>
-                    <button onClick={() => handleEdit(u)} style={styles.btnSmallEdit}>
-                      Update
-                    </button>
-                    <button onClick={() => handleDelete(u.id)} style={styles.btnSmallDelete}>
-                      Delete
-                    </button>
+                  <td><strong>{u.name}</strong></td>
+                  <td>{u.membership_id}</td>
+                  <td><span className={`badge badge-${u.role}`}>{u.role}</span></td>
+                  <td>{u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}</td>
+                  <td>
+                    <button onClick={() => { setForm({...u, password: ''}); setEditingId(u.id); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="btn btn-sm btn-edit">Update</button>
+                    {' '}
+                    <button onClick={() => { if(window.confirm('Delete?')) deleteUser(u.id).then(loadUsers); }} className="btn btn-sm btn-delete">Delete</button>
                   </td>
                 </tr>
               ))}
@@ -314,134 +147,3 @@ export default function Users() {
     </div>
   );
 }
-
-/* ---------- Reusable Field ---------- */
-function Field({ label, name, value, onChange, error, type = 'text', placeholder }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 180 }}>
-      <label style={styles.label} htmlFor={name}>
-        {label}
-      </label>
-      <input
-        id={name}
-        name={name}
-        type={type}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        style={{ ...styles.input, ...(error ? styles.inputError : {}) }}
-      />
-      {error && <span style={styles.errorText}>{error}</span>}
-    </div>
-  );
-}
-
-/* ---------- Styles ---------- */
-const styles = {
-  page: { padding: 24 },
-  card: {
-    background: 'white',
-    border: '1px solid #e2e8f0',
-    borderRadius: 10,
-    padding: 20,
-    marginBottom: 24,
-    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-  },
-  form: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: 16,
-    alignItems: 'flex-start',
-  },
-  selectGroup: { display: 'flex', flexDirection: 'column', gap: 4, minWidth: 140 },
-  label: { fontSize: 13, fontWeight: 600, color: '#475569' },
-  input: {
-    padding: '8px 10px',
-    border: '1px solid #cbd5e1',
-    borderRadius: 6,
-    fontSize: 14,
-    outline: 'none',
-  },
-  inputError: { borderColor: '#dc2626', background: '#fef2f2' },
-  errorText: { color: '#dc2626', fontSize: 12 },
-  errorLine: { color: '#dc2626', marginTop: 8, fontWeight: 500 },
-  actions: { display: 'flex', gap: 8, alignItems: 'flex-end', marginTop: 22 },
-  btnPrimary: {
-    padding: '10px 20px',
-    background: '#2563eb',
-    color: 'white',
-    border: 'none',
-    borderRadius: 6,
-    fontSize: 14,
-    fontWeight: 600,
-  },
-  btnSecondary: {
-    padding: '10px 20px',
-    background: '#e2e8f0',
-    color: '#0f172a',
-    border: 'none',
-    borderRadius: 6,
-    fontSize: 14,
-    fontWeight: 600,
-  },
-  btnSmallEdit: {
-    padding: '6px 12px',
-    background: '#f59e0b',
-    color: 'white',
-    border: 'none',
-    borderRadius: 4,
-    fontSize: 13,
-    marginRight: 6,
-  },
-  btnSmallDelete: {
-    padding: '6px 12px',
-    background: '#dc2626',
-    color: 'white',
-    border: 'none',
-    borderRadius: 4,
-    fontSize: 13,
-  },
-  table: {
-    width: '100%',
-    borderCollapse: 'collapse',
-    background: 'white',
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  th: {
-    textAlign: 'left',
-    padding: 12,
-    background: '#e2e8f0',
-    fontSize: 13,
-    textTransform: 'uppercase',
-    color: '#475569',
-  },
-  td: { padding: 12, borderBottom: '1px solid #e2e8f0', fontSize: 14 },
-  badgeAdmin: {
-    padding: '2px 10px',
-    background: '#dbeafe',
-    color: '#1e40af',
-    borderRadius: 12,
-    fontSize: 12,
-    fontWeight: 600,
-    textTransform: 'capitalize',
-  },
-  badgeMember: {
-    padding: '2px 10px',
-    background: '#e2e8f0',
-    color: '#475569',
-    borderRadius: 12,
-    fontSize: 12,
-    fontWeight: 600,
-    textTransform: 'capitalize',
-  },
-  loggedIn: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 16,
-    padding: 12,
-    background: '#f0fdf4',
-    border: '1px solid #86efac',
-    borderRadius: 8,
-  },
-};
