@@ -67,8 +67,8 @@ library-management-system/
 
 ### 1. Clone the repo
 ```bash
-git clone https://github.com/YOUR_USERNAME/library-management-system.git
-cd library-management-system
+git clone https://github.com/phetanetseleabram-creator/Library Management System_2.git
+cd Library Management System_2
 ```
 
 ### 2. Create the database
