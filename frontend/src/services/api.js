@@ -1,4 +1,4 @@
-const BASE = 'http://localhost:5000';
+const BASE = 'https://library-management-system-2-m1ap.onrender.com/';
 
 const handle = async (res) => {
   const data = await res.json();
